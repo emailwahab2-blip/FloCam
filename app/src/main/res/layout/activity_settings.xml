@@ -82,7 +82,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="40dp">
+            android:layout_marginBottom="32dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -110,6 +110,88 @@
                 android:layout_marginStart="8dp" />
 
         </LinearLayout>
+
+        <!-- Background Mode section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/background_mode"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="12dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_bg_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_bg_off"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bg_mode_off"
+                android:textSize="15sp"
+                android:buttonTint="@color/primary"
+                android:textColor="@color/text_primary"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_bg_blur"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bg_mode_blur"
+                android:textSize="15sp"
+                android:buttonTint="@color/primary"
+                android:textColor="@color/text_primary"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="4dp" />
+
+            <RadioButton
+                android:id="@+id/rb_bg_replace"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bg_mode_replace"
+                android:textSize="15sp"
+                android:buttonTint="@color/primary"
+                android:textColor="@color/text_primary"
+                android:paddingStart="8dp" />
+
+        </RadioGroup>
+
+        <!-- Gallery picker (shown only when Ganti Latar is selected) -->
+        <Button
+            android:id="@+id/btn_pick_bg"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/pick_background_image"
+            android:backgroundTint="@color/accent"
+            android:textColor="@color/black"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Background image thumbnail -->
+        <ImageView
+            android:id="@+id/iv_bg_preview"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:background="#22000000"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tv_bg_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/bg_image_hint"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"
+            android:layout_marginBottom="32dp" />
 
         <Button
             android:id="@+id/btn_apply"

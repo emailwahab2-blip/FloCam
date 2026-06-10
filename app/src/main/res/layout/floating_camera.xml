@@ -15,6 +15,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- ML Kit composite result overlay (blur/replace background) -->
+        <ImageView
+            android:id="@+id/composite_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
     </FrameLayout>
 
     <!-- Tap-to-show controls overlay -->

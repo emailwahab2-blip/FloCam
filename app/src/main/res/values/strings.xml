@@ -23,4 +23,13 @@
     <string name="apply_settings">Terapkan</string>
     <string name="flip_camera">Balik Kamera</string>
     <string name="close">Tutup</string>
+    <!-- Background mode -->
+    <string name="background_mode">Latar Belakang Kamera</string>
+    <string name="bg_mode_off">Mati (Normal)</string>
+    <string name="bg_mode_blur">Blur Latar</string>
+    <string name="bg_mode_replace">Ganti Latar</string>
+    <string name="pick_background_image">Pilih Gambar dari Galeri</string>
+    <string name="bg_image_hint">Belum ada gambar dipilih</string>
+    <string name="pick_image_first">Pilih gambar latar terlebih dahulu</string>
+    <string name="bg_selected">Gambar latar dipilih</string>
 </resources>

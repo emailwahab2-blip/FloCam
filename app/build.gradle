@@ -49,6 +49,9 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
 
+    // ML Kit Selfie Segmentation
+    implementation 'com.google.mlkit:segmentation-selfie:16.0.0-beta6'
+
     // Lifecycle service support
     implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
