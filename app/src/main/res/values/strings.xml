@@ -23,6 +23,8 @@
     <string name="apply_settings">Terapkan</string>
     <string name="flip_camera">Balik Kamera</string>
     <string name="close">Tutup</string>
+    <string name="fullscreen">Layar Penuh</string>
+    <string name="exit_fullscreen">Keluar Layar Penuh</string>
     <!-- Background mode -->
     <string name="background_mode">Latar Belakang Kamera</string>
     <string name="bg_mode_off">Mati (Normal)</string>

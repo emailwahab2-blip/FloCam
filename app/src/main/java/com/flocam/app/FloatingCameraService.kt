@@ -60,6 +60,9 @@ class FloatingCameraService : LifecycleService() {
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_UPDATE = "ACTION_UPDATE"
 
+        const val PREF_SAVED_X = "saved_x"
+        const val PREF_SAVED_Y = "saved_y"
+
         fun start(context: Context) {
             val intent = Intent(context, FloatingCameraService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -112,6 +115,9 @@ class FloatingCameraService : LifecycleService() {
     private var rsBlurScript: android.renderscript.ScriptIntrinsicBlur? = null
 
     private val analysisExecutor = Executors.newSingleThreadExecutor()
+
+    // Fullscreen state
+    private var isFullscreen = false
 
     // Drag state
     private var initialX = 0
@@ -239,6 +245,9 @@ class FloatingCameraService : LifecycleService() {
             useFrontCamera = !useFrontCamera
             cameraProvider?.let { bindCamera(it) }
         }
+        floatingView.findViewById<ImageButton>(R.id.btn_fullscreen).setOnClickListener {
+            if (isFullscreen) exitFullscreen() else enterFullscreen()
+        }
 
         windowManager.addView(floatingView, layoutParams)
     }
@@ -267,6 +276,7 @@ class FloatingCameraService : LifecycleService() {
                 isMoving = false; true
             }
             MotionEvent.ACTION_MOVE -> {
+                if (isFullscreen) return true
                 val dx = (event.rawX - initialTouchX).toInt()
                 val dy = (event.rawY - initialTouchY).toInt()
                 if (dx * dx + dy * dy > 25) isMoving = true
@@ -541,18 +551,78 @@ class FloatingCameraService : LifecycleService() {
         }
     }
 
+    // ── Fullscreen ────────────────────────────────────────────────────────────
+
+    private fun enterFullscreen() {
+        prefs.edit()
+            .putInt(PREF_SAVED_X, layoutParams.x)
+            .putInt(PREF_SAVED_Y, layoutParams.y)
+            .apply()
+        applyShape(SHAPE_SQUARE)
+        animateTransition {
+            layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT
+            layoutParams.height = WindowManager.LayoutParams.MATCH_PARENT
+            layoutParams.x = 0
+            layoutParams.y = 0
+            @Suppress("DEPRECATION")
+            layoutParams.flags = layoutParams.flags or
+                WindowManager.LayoutParams.FLAG_FULLSCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            windowManager.updateViewLayout(floatingView, layoutParams)
+            isFullscreen = true
+            floatingView.findViewById<ImageButton>(R.id.btn_fullscreen)
+                .setImageResource(R.drawable.ic_fullscreen_exit)
+        }
+    }
+
+    private fun exitFullscreen() {
+        val sizePx = dpToPx(prefs.getInt(PREF_SIZE, DEFAULT_SIZE_DP))
+        animateTransition {
+            layoutParams.width = sizePx
+            layoutParams.height = sizePx
+            layoutParams.x = prefs.getInt(PREF_SAVED_X, 50)
+            layoutParams.y = prefs.getInt(PREF_SAVED_Y, 150)
+            @Suppress("DEPRECATION")
+            layoutParams.flags = layoutParams.flags and
+                WindowManager.LayoutParams.FLAG_FULLSCREEN.inv() and
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN.inv()
+            windowManager.updateViewLayout(floatingView, layoutParams)
+            isFullscreen = false
+            floatingView.findViewById<ImageButton>(R.id.btn_fullscreen)
+                .setImageResource(R.drawable.ic_fullscreen)
+            val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
+            applyShape(shape)
+        }
+    }
+
+    private fun animateTransition(midAction: () -> Unit) {
+        floatingView.animate()
+            .alpha(0f).scaleX(0.85f).scaleY(0.85f)
+            .setDuration(120)
+            .withEndAction {
+                midAction()
+                floatingView.animate()
+                    .alpha(1f).scaleX(1f).scaleY(1f)
+                    .setDuration(150)
+                    .start()
+            }
+            .start()
+    }
+
     // ── Settings update ───────────────────────────────────────────────────────
 
     private fun updateAppearance() {
         if (!::floatingView.isInitialized) return
 
-        // Size + shape
+        // Size + shape (skip layout update while fullscreen — restored on exit)
         val sizePx = dpToPx(prefs.getInt(PREF_SIZE, DEFAULT_SIZE_DP))
         val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
-        layoutParams.width = sizePx; layoutParams.height = sizePx
-        windowManager.updateViewLayout(floatingView, layoutParams)
-        applyShape(shape)
-        floatingView.requestLayout()
+        if (!isFullscreen) {
+            layoutParams.width = sizePx; layoutParams.height = sizePx
+            windowManager.updateViewLayout(floatingView, layoutParams)
+            applyShape(shape)
+            floatingView.requestLayout()
+        }
 
         // Background mode – tear down old resources, build new ones
         val newMode = prefs.getString(PREF_BG_MODE, BG_MODE_OFF) ?: BG_MODE_OFF
