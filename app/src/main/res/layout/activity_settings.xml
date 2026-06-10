@@ -193,6 +193,61 @@
             android:visibility="gone"
             android:layout_marginBottom="32dp" />
 
+        <!-- Segmentation quality (tampil saat BG mode bukan Mati) -->
+        <LinearLayout
+            android:id="@+id/ll_seg_quality"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seg_quality_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seg_quality_hint"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="12dp" />
+
+            <RadioGroup
+                android:id="@+id/rg_seg_quality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_seg_normal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/seg_quality_normal"
+                    android:textSize="15sp"
+                    android:buttonTint="@color/primary"
+                    android:textColor="@color/text_primary" />
+
+                <RadioButton
+                    android:id="@+id/rb_seg_smooth"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/seg_quality_smooth"
+                    android:textSize="15sp"
+                    android:buttonTint="@color/primary"
+                    android:textColor="@color/text_primary" />
+
+            </RadioGroup>
+        </LinearLayout>
+
         <Button
             android:id="@+id/btn_apply"
             android:layout_width="match_parent"

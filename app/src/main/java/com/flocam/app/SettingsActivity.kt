@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.TextView
@@ -90,9 +91,25 @@ class SettingsActivity : AppCompatActivity() {
             runCatching { ivBgPreview.setImageURI(selectedBgUri) }
         }
 
+        // ---- Segmentation quality ----
+        val llSegQuality = findViewById<LinearLayout>(R.id.ll_seg_quality)
+        val rgSegQuality = findViewById<RadioGroup>(R.id.rg_seg_quality)
+
+        val savedQuality = prefs.getString(
+            FloatingCameraService.PREF_SEG_QUALITY, FloatingCameraService.SEG_QUALITY_NORMAL
+        ) ?: FloatingCameraService.SEG_QUALITY_NORMAL
+        when (savedQuality) {
+            FloatingCameraService.SEG_QUALITY_SMOOTH -> rgSegQuality.check(R.id.rb_seg_smooth)
+            else -> rgSegQuality.check(R.id.rb_seg_normal)
+        }
+        llSegQuality.visibility = if (savedBgMode != FloatingCameraService.BG_MODE_OFF)
+            View.VISIBLE else View.GONE
+
         rgBgMode.setOnCheckedChangeListener { _, checkedId ->
             val isReplace = checkedId == R.id.rb_bg_replace
+            val isOff = checkedId == R.id.rb_bg_off
             applyReplaceUiVisibility(isReplace, selectedBgUri != null, btnPickBg, ivBgPreview, tvBgHint)
+            llSegQuality.visibility = if (isOff) View.GONE else View.VISIBLE
         }
 
         btnPickBg.setOnClickListener {
@@ -119,11 +136,17 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            val segQuality = when (rgSegQuality.checkedRadioButtonId) {
+                R.id.rb_seg_smooth -> FloatingCameraService.SEG_QUALITY_SMOOTH
+                else -> FloatingCameraService.SEG_QUALITY_NORMAL
+            }
+
             prefs.edit()
                 .putInt(FloatingCameraService.PREF_SIZE, size)
                 .putString(FloatingCameraService.PREF_SHAPE, shape)
                 .putString(FloatingCameraService.PREF_BG_MODE, bgMode)
                 .putString(FloatingCameraService.PREF_BG_IMAGE_URI, selectedBgUri?.toString())
+                .putString(FloatingCameraService.PREF_SEG_QUALITY, segQuality)
                 .apply()
 
             if (FloatingCameraService.isRunning) {

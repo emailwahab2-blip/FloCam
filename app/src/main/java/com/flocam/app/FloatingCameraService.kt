@@ -63,6 +63,12 @@ class FloatingCameraService : LifecycleService() {
         const val PREF_SAVED_X = "saved_x"
         const val PREF_SAVED_Y = "saved_y"
 
+        const val PREF_SEG_QUALITY = "seg_quality"
+        const val SEG_QUALITY_NORMAL = "normal"
+        const val SEG_QUALITY_SMOOTH = "smooth"
+
+        private const val MASK_BLUR_RADIUS = 4
+
         fun start(context: Context) {
             val intent = Intent(context, FloatingCameraService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -149,8 +155,11 @@ class FloatingCameraService : LifecycleService() {
 
     private fun initSegmenter() {
         segmenter?.close()
+        val isSmooth = prefs.getString(PREF_SEG_QUALITY, SEG_QUALITY_NORMAL) == SEG_QUALITY_SMOOTH
+        val detectorMode = if (isSmooth) SelfieSegmenterOptions.SINGLE_IMAGE_MODE
+                           else SelfieSegmenterOptions.STREAM_MODE
         val options = SelfieSegmenterOptions.Builder()
-            .setDetectorMode(SelfieSegmenterOptions.STREAM_MODE)
+            .setDetectorMode(detectorMode)
             .enableRawSizeMask()
             .build()
         segmenter = Segmentation.getClient(options)
@@ -418,14 +427,15 @@ class FloatingCameraService : LifecycleService() {
         // Read mask into float array — buffer is ByteBuffer, each float = 4 bytes
         val maskBuf = mask.buffer
         maskBuf.rewind()
-        val maskData = FloatArray(maskBuf.remaining() / 4)
-        maskBuf.asFloatBuffer().get(maskData)
+        val rawMaskData = FloatArray(maskBuf.remaining() / 4)
+        maskBuf.asFloatBuffer().get(rawMaskData)
 
-        // Original frame pixels
+        // Gaussian blur on mask for feathered, natural edges
+        val maskData = blurMaskData(rawMaskData, maskW, maskH, MASK_BLUR_RADIUS)
+
         val framePixels = IntArray(w * h)
         frame.getPixels(framePixels, 0, w, 0, 0, w, h)
 
-        // Background pixels (blurred frame or custom image)
         val bgPixels: IntArray = when (bgMode) {
             BG_MODE_BLUR -> {
                 val blurred = blurBitmap(frame)
@@ -443,25 +453,68 @@ class FloatingCameraService : LifecycleService() {
             else -> return frame.copy(frame.config, false)
         }
 
-        // Composite: foreground pixels where mask confidence > 0.5, else background
+        // Alpha blending: gradasi halus berdasarkan nilai mask (0.0–1.0)
         val exact = (maskW == w && maskH == h)
         val scaleX = if (exact) 1f else maskW.toFloat() / w
         val scaleY = if (exact) 1f else maskH.toFloat() / h
 
         val resultPixels = IntArray(w * h)
         for (i in resultPixels.indices) {
-            val confidence = if (exact) {
+            val alpha = if (exact) {
                 maskData[i]
             } else {
                 val mx = (i % w * scaleX).toInt().coerceIn(0, maskW - 1)
                 val my = (i / w * scaleY).toInt().coerceIn(0, maskH - 1)
                 maskData[my * maskW + mx]
-            }
-            resultPixels[i] = if (confidence > 0.5f) framePixels[i] else bgPixels[i]
+            }.coerceIn(0f, 1f)
+
+            val fg = framePixels[i]
+            val bg = bgPixels[i]
+            val r = ((fg shr 16 and 0xFF) * alpha + (bg shr 16 and 0xFF) * (1f - alpha) + 0.5f).toInt()
+            val g = ((fg shr 8  and 0xFF) * alpha + (bg shr 8  and 0xFF) * (1f - alpha) + 0.5f).toInt()
+            val b = ((fg        and 0xFF) * alpha + (bg        and 0xFF) * (1f - alpha) + 0.5f).toInt()
+            resultPixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
         }
 
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         result.setPixels(resultPixels, 0, w, 0, 0, w, h)
+        return result
+    }
+
+    // Separable Gaussian blur pada float mask untuk efek feathering di tepi
+    private fun blurMaskData(data: FloatArray, width: Int, height: Int, radius: Int): FloatArray {
+        val sigma = radius / 2.0f
+        val size = 2 * radius + 1
+        val kernel = FloatArray(size) { i ->
+            val x = (i - radius).toFloat()
+            kotlin.math.exp((-x * x / (2f * sigma * sigma)).toDouble()).toFloat()
+        }
+        val kernelSum = kernel.sum()
+        for (i in kernel.indices) kernel[i] /= kernelSum
+
+        val temp = FloatArray(width * height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                var sum = 0f
+                for (k in 0 until size) {
+                    val sx = (x + k - radius).coerceIn(0, width - 1)
+                    sum += data[y * width + sx] * kernel[k]
+                }
+                temp[y * width + x] = sum
+            }
+        }
+
+        val result = FloatArray(width * height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                var sum = 0f
+                for (k in 0 until size) {
+                    val sy = (y + k - radius).coerceIn(0, height - 1)
+                    sum += temp[sy * width + x] * kernel[k]
+                }
+                result[y * width + x] = sum
+            }
+        }
         return result
     }
 

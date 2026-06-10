@@ -34,4 +34,9 @@
     <string name="bg_image_hint">Belum ada gambar dipilih</string>
     <string name="pick_image_first">Pilih gambar latar terlebih dahulu</string>
     <string name="bg_selected">Gambar latar dipilih</string>
+    <!-- Segmentation quality -->
+    <string name="seg_quality_title">Kualitas Segmentasi</string>
+    <string name="seg_quality_hint">Halus: tepi lebih natural, performa lebih berat</string>
+    <string name="seg_quality_normal">Normal</string>
+    <string name="seg_quality_smooth">Halus</string>
 </resources>
