@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">FloCam</string>
     <string name="app_subtitle">Kamera Floating untuk Android</string>
+    <string name="about_title">Tentang FloCam</string>
+    <string name="about_body"><![CDATA[Aplikasi ini dikembangkan oleh <a href="https://www.facebook.com/share/18y6KTqeF6/">Abdul Wahab Ahmad</a>.]]></string>
     <string name="camera_running">Kamera floating sedang aktif</string>
     <string name="camera_stopped">Kamera floating tidak aktif</string>
     <string name="start_camera">Aktifkan Kamera</string>

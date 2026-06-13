@@ -7,12 +7,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.method.LinkMovementMethod
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.text.HtmlCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         tvStatus = findViewById(R.id.tv_status)
         btnToggle = findViewById(R.id.btn_toggle)
         btnSettings = findViewById(R.id.btn_settings)
+
+        val tvAboutBody = findViewById<TextView>(R.id.tv_about_body)
+        tvAboutBody.text = HtmlCompat.fromHtml(
+            getString(R.string.about_body), HtmlCompat.FROM_HTML_MODE_LEGACY
+        )
+        tvAboutBody.movementMethod = LinkMovementMethod.getInstance()
 
         btnToggle.setOnClickListener {
             if (FloatingCameraService.isRunning) {
