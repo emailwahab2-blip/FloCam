@@ -44,4 +44,9 @@
     <string name="seg_quality_hint">Halus: tepi lebih natural, performa lebih berat</string>
     <string name="seg_quality_normal">Normal</string>
     <string name="seg_quality_smooth">Halus</string>
+    <!-- Penyesuaian wajah & kontras -->
+    <string name="face_adjust_title">Penyesuaian Gambar</string>
+    <string name="face_adjust_hint">Berlaku saat mode latar aktif. Kecerahan hanya pada wajah/orang.</string>
+    <string name="face_brightness">Kecerahan Wajah</string>
+    <string name="contrast">Kontras</string>
 </resources>

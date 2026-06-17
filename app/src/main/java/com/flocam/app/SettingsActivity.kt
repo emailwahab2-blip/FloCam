@@ -129,11 +129,30 @@ class SettingsActivity : AppCompatActivity() {
         llSegQuality.visibility = if (savedBgMode != FloatingCameraService.BG_MODE_OFF)
             View.VISIBLE else View.GONE
 
+        // ---- Penyesuaian wajah & kontras ----
+        val llFaceAdjust = findViewById<LinearLayout>(R.id.ll_face_adjust)
+        val seekBarBrightness = findViewById<SeekBar>(R.id.seekbar_brightness)
+        val tvBrightnessValue = findViewById<TextView>(R.id.tv_brightness_value)
+        val seekBarContrast = findViewById<SeekBar>(R.id.seekbar_contrast)
+        val tvContrastValue = findViewById<TextView>(R.id.tv_contrast_value)
+
+        bindAdjustSlider(
+            seekBarBrightness, tvBrightnessValue,
+            prefs.getInt(FloatingCameraService.PREF_FACE_BRIGHTNESS, FloatingCameraService.ADJUST_NEUTRAL)
+        )
+        bindAdjustSlider(
+            seekBarContrast, tvContrastValue,
+            prefs.getInt(FloatingCameraService.PREF_CONTRAST, FloatingCameraService.ADJUST_NEUTRAL)
+        )
+        llFaceAdjust.visibility = if (savedBgMode != FloatingCameraService.BG_MODE_OFF)
+            View.VISIBLE else View.GONE
+
         rgBgMode.setOnCheckedChangeListener { _, checkedId ->
             val isReplace = checkedId == R.id.rb_bg_replace
             val isOff = checkedId == R.id.rb_bg_off
             applyReplaceUiVisibility(isReplace, selectedBgUri != null, btnPickBg, ivBgPreview, tvBgHint)
             llSegQuality.visibility = if (isOff) View.GONE else View.VISIBLE
+            llFaceAdjust.visibility = if (isOff) View.GONE else View.VISIBLE
         }
 
         btnPickBg.setOnClickListener {
@@ -169,6 +188,8 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit()
                 .putInt(FloatingCameraService.PREF_SIZE, size)
                 .putInt(FloatingCameraService.PREF_CORNER_RADIUS, seekBarCorner.progress)
+                .putInt(FloatingCameraService.PREF_FACE_BRIGHTNESS, seekBarBrightness.progress)
+                .putInt(FloatingCameraService.PREF_CONTRAST, seekBarContrast.progress)
                 .putString(FloatingCameraService.PREF_SHAPE, shape)
                 .putString(FloatingCameraService.PREF_BG_MODE, bgMode)
                 .putString(FloatingCameraService.PREF_BG_IMAGE_URI, selectedBgUri?.toString())
@@ -180,6 +201,21 @@ class SettingsActivity : AppCompatActivity() {
             }
             finish()
         }
+    }
+
+    /** Slider 0..100 (50 = netral); label menampilkan offset bertanda -50%..+50%. */
+    private fun bindAdjustSlider(seekBar: SeekBar, label: TextView, savedProgress: Int) {
+        fun render(progress: Int) {
+            val offset = progress - FloatingCameraService.ADJUST_NEUTRAL
+            label.text = if (offset > 0) "+$offset%" else "$offset%"
+        }
+        seekBar.progress = savedProgress.coerceIn(0, 100)
+        render(seekBar.progress)
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) = render(progress)
+            override fun onStartTrackingTouch(sb: SeekBar) {}
+            override fun onStopTrackingTouch(sb: SeekBar) {}
+        })
     }
 
     private fun applyReplaceUiVisibility(

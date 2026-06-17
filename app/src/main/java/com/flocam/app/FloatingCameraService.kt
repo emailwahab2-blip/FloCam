@@ -74,6 +74,11 @@ class FloatingCameraService : LifecycleService() {
         const val SEG_QUALITY_NORMAL = "normal"
         const val SEG_QUALITY_SMOOTH = "smooth"
 
+        // Penyesuaian wajah/kontras — slider 0..100, 50 = netral (faktor 1.0)
+        const val PREF_FACE_BRIGHTNESS = "face_brightness"
+        const val PREF_CONTRAST = "contrast"
+        const val ADJUST_NEUTRAL = 50
+
         private const val MASK_BLUR_RADIUS = 4
 
         fun start(context: Context) {
@@ -113,6 +118,10 @@ class FloatingCameraService : LifecycleService() {
     @Volatile private var segmentationActive = false
     @Volatile private var customBgBitmap: Bitmap? = null
 
+    // Penyesuaian gambar (faktor 0.5..1.5; 1.0 = netral)
+    @Volatile private var faceBrightnessFactor = 1f
+    @Volatile private var contrastFactor = 1f
+
     // Cached scaled background (avoid rescaling every frame)
     private var scaledBgCache: Bitmap? = null
     private var scaledBgCacheW = -1
@@ -145,6 +154,8 @@ class FloatingCameraService : LifecycleService() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         prefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         bgMode = prefs.getString(PREF_BG_MODE, BG_MODE_OFF) ?: BG_MODE_OFF
+        faceBrightnessFactor = prefFactor(PREF_FACE_BRIGHTNESS)
+        contrastFactor = prefFactor(PREF_CONTRAST)
         if (bgMode != BG_MODE_OFF) {
             initSegmenter()
             if (bgMode == BG_MODE_BLUR) initRenderScript()
@@ -490,6 +501,12 @@ class FloatingCameraService : LifecycleService() {
         val scaleX = if (exact) 1f else maskW.toFloat() / w
         val scaleY = if (exact) 1f else maskH.toFloat() / h
 
+        // Faktor penyesuaian (di-snapshot agar konsisten sepanjang frame ini)
+        val brightness = faceBrightnessFactor
+        val contrast = contrastFactor
+        val doBright = brightness != 1f
+        val doContrast = contrast != 1f
+
         val resultPixels = IntArray(w * h)
         for (i in resultPixels.indices) {
             val alpha = if (exact) {
@@ -502,9 +519,27 @@ class FloatingCameraService : LifecycleService() {
 
             val fg = framePixels[i]
             val bg = bgPixels[i]
-            val r = ((fg shr 16 and 0xFF) * alpha + (bg shr 16 and 0xFF) * (1f - alpha) + 0.5f).toInt()
-            val g = ((fg shr 8  and 0xFF) * alpha + (bg shr 8  and 0xFF) * (1f - alpha) + 0.5f).toInt()
-            val b = ((fg        and 0xFF) * alpha + (bg        and 0xFF) * (1f - alpha) + 0.5f).toInt()
+
+            // Kecerahan hanya pada foreground (orang/wajah) sebelum blending
+            var fr = fg shr 16 and 0xFF
+            var fgG = fg shr 8 and 0xFF
+            var fb = fg and 0xFF
+            if (doBright) {
+                fr = (fr * brightness + 0.5f).toInt().coerceAtMost(255)
+                fgG = (fgG * brightness + 0.5f).toInt().coerceAtMost(255)
+                fb = (fb * brightness + 0.5f).toInt().coerceAtMost(255)
+            }
+
+            var r = (fr   * alpha + (bg shr 16 and 0xFF) * (1f - alpha) + 0.5f).toInt()
+            var g = (fgG  * alpha + (bg shr 8  and 0xFF) * (1f - alpha) + 0.5f).toInt()
+            var b = (fb   * alpha + (bg        and 0xFF) * (1f - alpha) + 0.5f).toInt()
+
+            // Kontras global pada hasil blending (titik pivot 128)
+            if (doContrast) {
+                r = (((r - 128) * contrast) + 128 + 0.5f).toInt().coerceIn(0, 255)
+                g = (((g - 128) * contrast) + 128 + 0.5f).toInt().coerceIn(0, 255)
+                b = (((b - 128) * contrast) + 128 + 0.5f).toInt().coerceIn(0, 255)
+            }
             resultPixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
         }
 
@@ -711,6 +746,10 @@ class FloatingCameraService : LifecycleService() {
             floatingView.requestLayout()
         }
 
+        // Penyesuaian wajah & kontras
+        faceBrightnessFactor = prefFactor(PREF_FACE_BRIGHTNESS)
+        contrastFactor = prefFactor(PREF_CONTRAST)
+
         // Background mode – tear down old resources, build new ones
         val newMode = prefs.getString(PREF_BG_MODE, BG_MODE_OFF) ?: BG_MODE_OFF
         bgMode = newMode
@@ -757,4 +796,8 @@ class FloatingCameraService : LifecycleService() {
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
+
+    /** Slider 0..100 → faktor 0.5..1.5 (50 = netral 1.0). */
+    private fun prefFactor(key: String): Float =
+        0.5f + prefs.getInt(key, ADJUST_NEUTRAL).coerceIn(0, 100) / 100f
 }
