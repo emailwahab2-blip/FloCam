@@ -12,10 +12,14 @@ Kamera floating untuk Android yang tampil di atas aplikasi lain — cocok untuk 
 |---|---|
 | **Floating camera** | Overlay kamera di atas semua aplikasi, bisa dipindah dengan drag |
 | **Flip kamera** | Ganti antara kamera depan dan belakang |
-| **Bentuk kamera** | Lingkaran atau kotak, bisa diatur di Settings |
+| **Mode layar penuh** | Bentangkan kamera ke seluruh layar lalu kembali ke overlay kapan saja |
+| **Bentuk kamera** | Lingkaran, kotak, atau **persegi panjang lanskap dengan sudut membulat** yang radiusnya bisa diatur |
 | **Ukuran kamera** | Slider 100–400 dp, bisa diatur di Settings |
 | **Blur latar** | ML Kit memisahkan orang dari background — background diblur, wajah tetap tajam |
 | **Ganti latar** | Pilih gambar dari galeri sebagai virtual background |
+| **Kualitas segmentasi** | Pilih Normal (ringan) atau Halus (tepi lebih natural) |
+| **Kecerahan wajah** | Cerahkan hanya wajah/orang memakai mask segmentasi (saat mode latar aktif) |
+| **Kontras** | Atur kontras gambar saat mode latar aktif |
 | **Notifikasi persistent** | Tombol stop langsung dari notification bar |
 
 ### Kontrol Floating Camera
@@ -25,6 +29,7 @@ Ketuk sekali pada overlay kamera untuk memunculkan panel kontrol (hilang otomati
 - **Balik** — flip kamera depan/belakang
 - **Pengaturan** — buka Settings
 - **Tutup** — hentikan kamera floating
+- **Layar Penuh** — bentangkan kamera ke seluruh layar / kembali ke overlay
 
 ---
 
@@ -42,6 +47,16 @@ Ketuk sekali pada overlay kamera untuk memunculkan panel kontrol (hilang otomati
 4. Ketuk overlay untuk melihat tombol kontrol
 5. Buka **Pengaturan** untuk mengatur bentuk, ukuran, dan efek latar belakang
 
+### Bentuk & Ukuran
+
+Di menu Pengaturan → bagian **Bentuk Kamera**:
+
+- **Lingkaran** — overlay bundar
+- **Kotak** — overlay persegi
+- **Persegi Panjang** — overlay lanskap (rasio 16:9) dengan sudut membulat; muncul slider **Kelengkungan Sudut** untuk mengatur radius pojok (0–100 dp)
+
+Slider **Ukuran Kamera** mengatur besar overlay (100–400 dp).
+
 ### Efek Latar Belakang
 
 Di menu Pengaturan → bagian **Latar Belakang Kamera**:
@@ -49,6 +64,13 @@ Di menu Pengaturan → bagian **Latar Belakang Kamera**:
 - **Mati (Normal)** — kamera tanpa efek
 - **Blur Latar** — background otomatis diblur menggunakan ML Kit Selfie Segmentation
 - **Ganti Latar** — ketuk *Pilih Gambar dari Galeri*, pilih foto, lalu Terapkan
+
+Saat mode latar aktif, muncul pengaturan tambahan:
+
+- **Kualitas Segmentasi** — *Normal* (ringan) atau *Halus* (tepi lebih natural, lebih berat)
+- **Penyesuaian Gambar** — slider **Kecerahan Wajah** (mencerahkan hanya orang/wajah lewat mask segmentasi) dan **Kontras** (seluruh frame)
+
+> Catatan: Kecerahan Wajah & Kontras hanya bekerja saat mode latar Blur/Ganti aktif, karena bergantung pada mask segmentasi.
 
 ---
 
@@ -126,6 +148,9 @@ SegmentationMask — confidence per pixel (0.0 background, 1.0 foreground)
        └─ Ganti Latar → frame asli + gambar galeri → composite
        │
        ▼
+Kecerahan wajah (foreground) + kontras global diterapkan
+       │
+       ▼
 Ditampilkan di ImageView overlay (rotasi & mirror otomatis)
 ```
 
@@ -141,6 +166,12 @@ Ditampilkan di ImageView overlay (rotasi & mirror otomatis)
 | `FOREGROUND_SERVICE_CAMERA` | Tipe foreground service kamera (API 29+) |
 | `POST_NOTIFICATIONS` | Notifikasi status kamera (API 33+) |
 | `READ_MEDIA_IMAGES` | Membaca gambar galeri untuk virtual background |
+
+---
+
+## Pengembang
+
+Dikembangkan oleh **[Abdul Wahab Ahmad](https://www.facebook.com/share/18y6KTqeF6/)**.
 
 ---
 
