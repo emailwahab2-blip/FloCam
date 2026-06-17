@@ -48,6 +48,7 @@ class FloatingCameraService : LifecycleService() {
         const val PREF_NAME = "flocam_prefs"
         const val PREF_SHAPE = "shape"
         const val PREF_SIZE = "size"
+        const val PREF_CORNER_RADIUS = "corner_radius"
         const val PREF_BG_MODE = "bg_mode"
         const val PREF_BG_IMAGE_URI = "bg_image_uri"
         const val BG_MODE_OFF = "off"
@@ -55,7 +56,13 @@ class FloatingCameraService : LifecycleService() {
         const val BG_MODE_REPLACE = "replace"
         const val SHAPE_CIRCLE = "circle"
         const val SHAPE_SQUARE = "square"
+        const val SHAPE_ROUNDED = "rounded"
         const val DEFAULT_SIZE_DP = 200
+        const val DEFAULT_CORNER_RADIUS_DP = 24
+
+        // Rasio tinggi:lebar untuk bentuk persegi panjang lanskap (16:9)
+        private const val LANDSCAPE_H_NUM = 9
+        private const val LANDSCAPE_H_DEN = 16
 
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_UPDATE = "ACTION_UPDATE"
@@ -220,6 +227,7 @@ class FloatingCameraService : LifecycleService() {
     private fun createFloatingView() {
         val sizePx = dpToPx(prefs.getInt(PREF_SIZE, DEFAULT_SIZE_DP))
         val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
+        val (w, h) = computeDimensions(shape, sizePx)
 
         val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -227,7 +235,7 @@ class FloatingCameraService : LifecycleService() {
             @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
         layoutParams = WindowManager.LayoutParams(
-            sizePx, sizePx, overlayType,
+            w, h, overlayType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
@@ -261,18 +269,42 @@ class FloatingCameraService : LifecycleService() {
         windowManager.addView(floatingView, layoutParams)
     }
 
+    /**
+     * Ukuran jendela mengambang berdasarkan bentuk. Bentuk persegi panjang
+     * lanskap memakai lebar = sizePx, tinggi = 9/16 dari lebar; bentuk lain kotak.
+     */
+    private fun computeDimensions(shape: String, sizePx: Int): Pair<Int, Int> =
+        if (shape == SHAPE_ROUNDED)
+            sizePx to (sizePx * LANDSCAPE_H_NUM / LANDSCAPE_H_DEN)
+        else
+            sizePx to sizePx
+
     private fun applyShape(shape: String) {
         val container = floatingView.findViewById<FrameLayout>(R.id.camera_container)
-        if (shape == SHAPE_CIRCLE) {
-            container.outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: Outline) {
-                    outline.setOval(0, 0, view.width, view.height)
+        when (shape) {
+            SHAPE_CIRCLE -> {
+                container.outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: Outline) {
+                        outline.setOval(0, 0, view.width, view.height)
+                    }
                 }
+                container.clipToOutline = true
             }
-            container.clipToOutline = true
-        } else {
-            container.outlineProvider = ViewOutlineProvider.BOUNDS
-            container.clipToOutline = false
+            SHAPE_ROUNDED -> {
+                val radiusPx = dpToPx(
+                    prefs.getInt(PREF_CORNER_RADIUS, DEFAULT_CORNER_RADIUS_DP)
+                ).toFloat()
+                container.outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+                    }
+                }
+                container.clipToOutline = true
+            }
+            else -> {
+                container.outlineProvider = ViewOutlineProvider.BOUNDS
+                container.clipToOutline = false
+            }
         }
         container.invalidateOutline()
     }
@@ -630,9 +662,11 @@ class FloatingCameraService : LifecycleService() {
 
     private fun exitFullscreen() {
         val sizePx = dpToPx(prefs.getInt(PREF_SIZE, DEFAULT_SIZE_DP))
+        val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
+        val (w, h) = computeDimensions(shape, sizePx)
         animateTransition {
-            layoutParams.width = sizePx
-            layoutParams.height = sizePx
+            layoutParams.width = w
+            layoutParams.height = h
             layoutParams.x = prefs.getInt(PREF_SAVED_X, 50)
             layoutParams.y = prefs.getInt(PREF_SAVED_Y, 150)
             @Suppress("DEPRECATION")
@@ -643,7 +677,6 @@ class FloatingCameraService : LifecycleService() {
             isFullscreen = false
             floatingView.findViewById<ImageButton>(R.id.btn_fullscreen)
                 .setImageResource(R.drawable.ic_fullscreen)
-            val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
             applyShape(shape)
         }
     }
@@ -671,7 +704,8 @@ class FloatingCameraService : LifecycleService() {
         val sizePx = dpToPx(prefs.getInt(PREF_SIZE, DEFAULT_SIZE_DP))
         val shape = prefs.getString(PREF_SHAPE, SHAPE_CIRCLE) ?: SHAPE_CIRCLE
         if (!isFullscreen) {
-            layoutParams.width = sizePx; layoutParams.height = sizePx
+            val (w, h) = computeDimensions(shape, sizePx)
+            layoutParams.width = w; layoutParams.height = h
             windowManager.updateViewLayout(floatingView, layoutParams)
             applyShape(shape)
             floatingView.requestLayout()

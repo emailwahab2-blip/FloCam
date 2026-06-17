@@ -18,6 +18,9 @@
     <string name="camera_shape">Bentuk Kamera</string>
     <string name="shape_circle">Lingkaran</string>
     <string name="shape_square">Kotak</string>
+    <string name="shape_rounded">Persegi Panjang</string>
+    <string name="corner_radius">Kelengkungan Sudut</string>
+    <string name="corner_radius_value">%ddp</string>
     <string name="camera_size">Ukuran Kamera</string>
     <string name="size_small">Kecil</string>
     <string name="size_large">Besar</string>

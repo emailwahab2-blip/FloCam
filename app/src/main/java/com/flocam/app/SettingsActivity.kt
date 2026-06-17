@@ -59,6 +59,30 @@ class SettingsActivity : AppCompatActivity() {
         when (savedShape) {
             FloatingCameraService.SHAPE_CIRCLE -> rgShape.check(R.id.rb_circle)
             FloatingCameraService.SHAPE_SQUARE -> rgShape.check(R.id.rb_square)
+            FloatingCameraService.SHAPE_ROUNDED -> rgShape.check(R.id.rb_rounded)
+        }
+
+        // ---- Corner radius (hanya untuk bentuk Persegi Panjang) ----
+        val llCornerRadius = findViewById<LinearLayout>(R.id.ll_corner_radius)
+        val seekBarCorner = findViewById<SeekBar>(R.id.seekbar_corner)
+        val tvCornerValue = findViewById<TextView>(R.id.tv_corner_value)
+        val savedCorner = prefs.getInt(
+            FloatingCameraService.PREF_CORNER_RADIUS, FloatingCameraService.DEFAULT_CORNER_RADIUS_DP
+        )
+        seekBarCorner.progress = savedCorner.coerceIn(0, 100)
+        tvCornerValue.text = getString(R.string.corner_radius_value, savedCorner)
+        seekBarCorner.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                tvCornerValue.text = getString(R.string.corner_radius_value, progress)
+            }
+            override fun onStartTrackingTouch(sb: SeekBar) {}
+            override fun onStopTrackingTouch(sb: SeekBar) {}
+        })
+        llCornerRadius.visibility =
+            if (savedShape == FloatingCameraService.SHAPE_ROUNDED) View.VISIBLE else View.GONE
+        rgShape.setOnCheckedChangeListener { _, checkedId ->
+            llCornerRadius.visibility =
+                if (checkedId == R.id.rb_rounded) View.VISIBLE else View.GONE
         }
 
         // ---- Background mode ----
@@ -123,6 +147,7 @@ class SettingsActivity : AppCompatActivity() {
             val shape = when (rgShape.checkedRadioButtonId) {
                 R.id.rb_circle -> FloatingCameraService.SHAPE_CIRCLE
                 R.id.rb_square -> FloatingCameraService.SHAPE_SQUARE
+                R.id.rb_rounded -> FloatingCameraService.SHAPE_ROUNDED
                 else -> FloatingCameraService.SHAPE_CIRCLE
             }
             val bgMode = when (rgBgMode.checkedRadioButtonId) {
@@ -143,6 +168,7 @@ class SettingsActivity : AppCompatActivity() {
 
             prefs.edit()
                 .putInt(FloatingCameraService.PREF_SIZE, size)
+                .putInt(FloatingCameraService.PREF_CORNER_RADIUS, seekBarCorner.progress)
                 .putString(FloatingCameraService.PREF_SHAPE, shape)
                 .putString(FloatingCameraService.PREF_BG_MODE, bgMode)
                 .putString(FloatingCameraService.PREF_BG_IMAGE_URI, selectedBgUri?.toString())
