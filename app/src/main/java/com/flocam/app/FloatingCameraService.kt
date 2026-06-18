@@ -263,6 +263,20 @@ class FloatingCameraService : LifecycleService() {
         applyShape(shape)
         floatingView.setOnTouchListener { _, event -> handleTouch(event) }
 
+        // Tombol back saat fullscreen → keluar dari fullscreen (bukan ke menu aplikasi).
+        // Hanya bekerja saat jendela focusable, yaitu selama mode fullscreen.
+        floatingView.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK &&
+                event.action == KeyEvent.ACTION_UP &&
+                isFullscreen
+            ) {
+                exitFullscreen()
+                true
+            } else {
+                false
+            }
+        }
+
         floatingView.findViewById<ImageButton>(R.id.btn_close).setOnClickListener { stopSelf() }
         floatingView.findViewById<ImageButton>(R.id.btn_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java).apply {
@@ -685,11 +699,15 @@ class FloatingCameraService : LifecycleService() {
             layoutParams.x = 0
             layoutParams.y = 0
             @Suppress("DEPRECATION")
-            layoutParams.flags = layoutParams.flags or
+            layoutParams.flags = (layoutParams.flags or
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN) and
+                // Jadikan focusable agar tombol back ditangkap overlay (bukan diteruskan ke launcher).
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
             windowManager.updateViewLayout(floatingView, layoutParams)
             isFullscreen = true
+            floatingView.isFocusableInTouchMode = true
+            floatingView.requestFocus()
             floatingView.findViewById<ImageButton>(R.id.btn_fullscreen)
                 .setImageResource(R.drawable.ic_fullscreen_exit)
         }
@@ -705,9 +723,12 @@ class FloatingCameraService : LifecycleService() {
             layoutParams.x = prefs.getInt(PREF_SAVED_X, 50)
             layoutParams.y = prefs.getInt(PREF_SAVED_Y, 150)
             @Suppress("DEPRECATION")
-            layoutParams.flags = layoutParams.flags and
+            layoutParams.flags = (layoutParams.flags and
                 WindowManager.LayoutParams.FLAG_FULLSCREEN.inv() and
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN.inv()
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN.inv()) or
+                // Kembalikan ke non-focusable agar tidak menahan input app di belakang.
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            floatingView.isFocusableInTouchMode = false
             windowManager.updateViewLayout(floatingView, layoutParams)
             isFullscreen = false
             floatingView.findViewById<ImageButton>(R.id.btn_fullscreen)
