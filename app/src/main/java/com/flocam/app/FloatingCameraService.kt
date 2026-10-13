@@ -265,16 +265,8 @@ class FloatingCameraService : LifecycleService() {
 
         // Tombol back saat fullscreen → keluar dari fullscreen (bukan ke menu aplikasi).
         // Hanya bekerja saat jendela focusable, yaitu selama mode fullscreen.
-        floatingView.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_BACK &&
-                event.action == KeyEvent.ACTION_UP &&
-                isFullscreen
-            ) {
-                exitFullscreen()
-                true
-            } else {
-                false
-            }
+        (floatingView as BackAwareFrameLayout).onBack = {
+            if (isFullscreen) { exitFullscreen(); true } else false
         }
 
         floatingView.findViewById<ImageButton>(R.id.btn_close).setOnClickListener { stopSelf() }
